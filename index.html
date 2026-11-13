@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apex Nova</title>
+<style>
+:root{--page-bg:#111;--panel:#000b;--favorites-panel:#241b00;--button-start:#222;--button-end:#555;--accent:red;--text:#fff;--border:#ccc;--button-border:2px;--modal-bg:#222;--theme-intensity:1;--custom-hue:210;--station-background:url("https://i.pinimg.com/474x/51/51/94/51519450d0ef1ab456babef79f0dc3bf.jpg?nii=t");--font-main:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+[data-theme=light]{--page-bg:#eef2f7;--panel:#ffffffdf;--favorites-panel:#fff8d9;--button-start:#fff;--button-end:#dbe2ea;--accent:#3578c9;--text:#17202a;--border:#718096;--modal-bg:#fff}
+[data-theme=warm]{--page-bg:#3b2117;--panel:#35150dcc;--favorites-panel:#542b0f;--button-start:#5f291b;--button-end:#a64b27;--accent:#e88900;--text:#fff7ed;--border:#e9a46b;--modal-bg:#4a2418}
+[data-theme=cold]{--page-bg:#0c2438;--panel:#061521dd;--favorites-panel:#102d46;--button-start:#123b5a;--button-end:#287e9d;--accent:#41c7e8;--text:#e9fbff;--border:#83c8d9;--modal-bg:#102f46}
+[data-theme=custom]{--page-bg:hsl(var(--custom-hue) 35% 12%);--panel:hsl(var(--custom-hue) 35% 8%/.87);--favorites-panel:hsl(var(--custom-hue) 65% 17%);--button-start:hsl(var(--custom-hue) 35% 18%);--button-end:hsl(var(--custom-hue) 55% 38%);--accent:hsl(var(--custom-hue) 90% 55%);--text:hsl(var(--custom-hue) 80% 96%);--border:hsl(var(--custom-hue) 65% 70%);--modal-bg:hsl(var(--custom-hue) 35% 16%)}
+*{box-sizing:border-box}
+body{display:flex;flex-direction:column;margin:0;min-height:100vh;color:var(--text);background-color:var(--page-bg);background-image:var(--station-background);background-repeat:no-repeat;background-attachment:fixed;background-size:cover;font-family:var(--font-main);filter:contrast(calc(.65 + var(--theme-intensity)*.75))}
+.page-header{position:relative;display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px 115px 8px 10px}
+.page-header p,p{color:var(--text);font-size:18px;font-weight:700;text-align:center}
+.page-header p{position:absolute;left:50%;margin:0;transform:translateX(-50%);white-space:nowrap}
+p{background:linear-gradient(to right,transparent,#000,transparent)}
+.data-counter{position:absolute;top:50%;left:10px;padding:5px 9px;border:1px solid var(--border);border-radius:8px;background:var(--panel);font-size:12px;transform:translateY(-50%)}
+button,.folder-button,.favorites-button,.favorites-toggle{border:var(--button-border) solid var(--border);border-radius:10px;background:linear-gradient(to bottom,var(--button-start),var(--button-end));color:var(--text);cursor:pointer;font-family:var(--font-main);font-weight:700}
+button:hover{filter:brightness(1.25)}
+.settings-button{position:absolute;top:50%;right:10px;min-height:32px;padding:5px 10px;transform:translateY(-50%);font-size:13px}
+.file-row,.search-row{display:flex;align-items:stretch;gap:8px;width:90%;max-width:700px;margin:12px auto}
+.search-row{margin-top:0}
+.file-selector,.search-input{flex:1;min-width:0;padding:12px;border:2px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);font-size:16px}
+.search-input::placeholder{color:var(--text);opacity:.7}
+.clear-search{width:48px;padding:8px;font-size:20px}
+.file-row .favorites-toggle,.file-row .folder-button{flex:0 0 auto;width:48px;padding:9px 10px;font-size:22px}
+.file-row .favorites-toggle{order:-1}
+.file-row .favorites-toggle.active{border-color:#ffd43b;background:#8a6500;color:#fff;box-shadow:0 0 12px #ffd43b99}
+.file-row .folder-button{display:flex;align-items:center;justify-content:center}
+#folderInput,#favoritesImportInput,#backgroundFileInput{display:none}
+.status{display:none;position:fixed;right:18px;bottom:18px;z-index:2000;max-width:360px;padding:13px 17px;border:1px solid var(--border);border-radius:10px;background:#111e;color:#fff;box-shadow:0 3px 16px #0008}
+.status.show{display:block}
+.favorites-area{width:90%;margin:18px auto 0}
+.favorites-list{width:100%;max-height:220px;margin:0;border:2px solid #ffd43b!important;background:var(--favorites-panel)!important;box-shadow:0 0 12px #ffd43b33}
+.station-list{overflow-y:auto;width:90%;height:calc(100vh - 410px);min-height:180px;margin:10px auto 0;padding:10px;border:2px solid var(--border);border-radius:10px;background:var(--panel);flex:1}
+.station-list.favorites-mode{background:var(--favorites-panel)}
+.station-row{display:flex;gap:5px;width:100%;margin:4px 0}
+.station-item{flex:1;min-width:0;overflow:hidden;padding:8px;border:1px solid var(--border);border-radius:8px;background:linear-gradient(to bottom,var(--button-start),var(--button-end));color:var(--text);cursor:pointer;text-align:left;font-size:14px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.station-item.playing{border-color:var(--accent);outline:3px solid var(--accent);background:linear-gradient(to bottom,var(--accent),var(--button-end));color:#fff;box-shadow:0 0 12px var(--accent)}
+.favorite-button{width:42px;padding:0;border:var(--button-border) solid var(--border);border-radius:8px;background:linear-gradient(to bottom,var(--button-start),var(--button-end));color:#ffd700;font-size:22px}
+.random-button{display:block;overflow:hidden;width:60%;height:50px;margin:18px auto 14px;padding:0 18px;border:0;border-radius:25px;background:linear-gradient(to bottom,#000,var(--accent));color:#fff;text-overflow:ellipsis;white-space:nowrap;font-size:20px}
+.random-button.playing{outline:3px solid var(--accent);box-shadow:0 0 18px var(--accent)}
+.player-controls{display:flex;justify-content:center;gap:8px;width:100%;margin:0 auto 8px}
+.btt_play{width:48%;height:40px;border-radius:25px;font-size:14px}
+.volume-slider{display:block;width:90%;margin:10px auto}
+.search-actions{display:flex;gap:6px;width:90%;max-width:700px;margin:8px auto}
+.search-actions button{flex:1;min-width:0;min-height:34px;padding:5px 8px;font-size:12px}
+.search-actions[hidden]{display:none}
+dialog{width:min(92%,450px);border:2px solid var(--border);border-radius:15px;background:var(--modal-bg);color:var(--text);box-shadow:0 8px 35px #000b}
+dialog::backdrop{background:#0009}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{margin:0 0 18px}
+.close-button{border:0;background:none;color:var(--text);font-size:24px}
+.settings-toggle-buttons{display:flex;gap:8px;margin:18px 0}
+.toggle-setting{flex:1;padding:9px 6px;font-size:12px}
+.toggle-setting[aria-pressed=true]{border-color:#ffb347;background:linear-gradient(to bottom,#78150c,#ff8c00);color:#fff}
+.setting-row,.intensity-row,.custom-color-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0}
+.setting-row select{min-width:170px;padding:8px;border-radius:7px}
+.intensity-row label,.border-row label{min-width:170px}
+#themeIntensity,#buttonBorder{flex:1}
+.intensity-value,.border-value{min-width:42px;text-align:right}
+.custom-color-row{display:none}
+.custom-color-row.visible{display:flex}
+.custom-color-row label{min-width:100px}
+#customHue{width:100%;height:20px;appearance:none;border-radius:10px;background:linear-gradient(to right,red,#ff0,#0f0,#0ff,#00f,#f0f,red)}
+.custom-color-preview{width:28px;height:28px;border:2px solid var(--border);border-radius:50%}
+.modal-actions{display:grid;gap:9px;margin-top:20px}
+.modal-actions button{width:100%;padding:9px 14px;text-align:left}
+.file-actions{display:flex;gap:8px;flex-wrap:nowrap}
+.file-actions button{flex:1;min-width:0}
+.background-menu{display:grid;gap:7px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.background-menu[hidden]{display:none}
+.background-menu button{padding:8px;text-align:left}
+.background-url-actions{display:flex;gap:7px}
+.background-url-actions button:first-child{flex:1}
+.background-url-actions button:last-child{width:42px;text-align:center}
+@media(max-width:600px){
+.file-row,.search-row,.station-list,.search-actions{width:96%}
+.page-header{min-height:44px;padding-right:100px}
+.page-header p{font-size:16px}
+.data-counter{left:6px;font-size:10px}
+.settings-button{right:6px}
+.station-list{height:calc(100vh - 450px);min-height:120px}
+.random-button{width:85%}
+.setting-row,.intensity-row,.custom-color-row,.border-row{align-items:stretch;flex-direction:column}
+.setting-row select{width:100%}
+.settings-toggle-buttons .toggle-setting{font-size:10px;padding:8px 3px}
+.file-actions{flex-direction:row}
+.file-actions button{font-size:11px;padding:8px 3px}
+}
+.ios-device .volume-slider{display:none}
+</style>
+</head>
+<body>
+<div class="page-header"><span id="dataCounter" class="data-counter" hidden>Данные: 0 МБ</span><p>Sound Shelter</p><button id="settingsButton" class="settings-button" type="button">⚙</button></div>
+<div class="file-row"><button id="favoritesToggle" class="favorites-toggle active" type="button">★</button><select id="fileSelector" class="file-selector"><option value="">Выберите список радиостанций</option></select><button id="folderButton" class="folder-button" type="button">📁</button></div>
+<div class="search-row"><input id="playlistSearch" class="search-input" type="search" placeholder="Поиск по всем плейлистам и потокам..." autocomplete="off"><button id="clearSearch" class="clear-search" type="button">×</button></div>
+<div id="status" class="status"></div>
+<div id="favoritesArea" class="favorites-area"><div id="favoritesList" class="station-list favorites-list"></div></div>
+<button id="ranbutton" class="random-button" type="button">Случайная станция</button>
+<div class="player-controls"><button id="playBtn" class="btt_play" type="button">Play</button><button id="pauseBtn" class="btt_play" type="button">Pause</button></div>
+<audio id="palyer" preload="metadata"></audio>
+<input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step=".1" value=".5">
+<div id="searchActions" class="search-actions"><button id="addAllButton" type="button">Добавить всё</button><button id="saveAllButton" type="button">Сохранить избранное</button><button id="clearFavoritesButton" type="button">Очистить избранное</button></div>
+<div id="stationList" class="station-list"></div>
+
+<dialog id="settingsDialog">
+<div class="modal-header"><h2>Настройки</h2><button id="closeSettingsButton" class="close-button" type="button">×</button></div>
+<div class="settings-toggle-buttons"><button id="backgroundToggle" class="toggle-setting" type="button" aria-pressed="false">Фон включён</button><button id="replaceStationsToggle" class="toggle-setting" type="button" aria-pressed="false">Только избранное</button><button id="dataCounterToggle" class="toggle-setting" type="button" aria-pressed="false">Загрузка</button></div>
+<div class="setting-row"><label for="themeSelector">Цветовая схема</label><select id="themeSelector"><option value="dark">Тёмная</option><option value="light">Светлые тона</option><option value="warm">Тёплые тона</option><option value="cold">Холодные тона</option><option value="custom">Своя схема</option></select></div>
+<div class="intensity-row"><label for="themeIntensity">Контрастность цвета</label><input id="themeIntensity" type="range" min="0" max="100" value="100"><span id="intensityValue">100%</span></div>
+<div class="border-row intensity-row"><label for="buttonBorder">Толщина обводки кнопок</label><input id="buttonBorder" type="range" min="0" max="6" step=".5" value="2"><span id="borderValue">2px</span></div>
+<div id="customColorRow" class="custom-color-row"><label for="customHue">Основной оттенок</label><input id="customHue" type="range" min="0" max="360" value="210"><span id="customColorPreview" class="custom-color-preview"></span></div>
+<div class="modal-actions">
+<button id="backgroundSourceButton" type="button">🖼️ Изображение / ссылка</button>
+<div id="backgroundMenu" class="background-menu" hidden>
+<div class="background-url-actions"><button id="backgroundUrlButton" type="button">🔗 Вставить ссылку из буфера</button><button id="clearBackgroundButton" type="button" title="Удалить ссылку">×</button></div>
+<button id="backgroundFileButton" type="button">📁 Выбрать изображение из файлов</button>
+</div>
+<div class="file-actions"><button id="exportFavoritesButton" type="button">📤 Экспорт настроек</button><button id="importFavoritesButton" type="button">📥 Импорт настроек</button></div>
+<button id="exportM3UButton" type="button">💾 Сохранить избранное в M3U</button>
+<input id="folderInput" type="file" webkitdirectory directory multiple accept=".m3u"><input id="favoritesImportInput" type="file" accept=".json"><input id="backgroundFileInput" type="file" accept="image/*">
+</div>
+</dialog>
+
+<script>
+const KEY="radioPageSettings",PREFIX="radioM3UContent:",$=id=>document.getElementById(id),defaultBackground='url("https://i.pinimg.com/474x/51/51/94/51519450d0ef1ab456babef79f0dc3bf.jpg?nii=t")';
+let m3uFiles=[],stations=[],favorites=[],playingStation=null,favoritesCollapsed=false,replaceStationsWithFavorites=false,backgroundEnabled=false,dataCounterEnabled=false,statusTimer,dataBytes=0;
+const fileSelector=$("fileSelector"),stationList=$("stationList"),favoritesList=$("favoritesList"),favoritesArea=$("favoritesArea"),favoritesToggle=$("favoritesToggle"),status=$("status"),player=$("palyer"),volumeSlider=$("volumeSlider"),randomButton=$("ranbutton"),search=$("playlistSearch"),actions=$("searchActions"),theme=$("themeSelector"),intensity=$("themeIntensity"),hue=$("customHue"),buttonBorder=$("buttonBorder");
+if(/iPhone|iPod/i.test(navigator.userAgent))document.body.classList.add("ios-device");
+function settings(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return {}}}
+function notify(t){status.textContent=t;status.classList.add("show");clearTimeout(statusTimer);statusTimer=setTimeout(()=>status.classList.remove("show"),3500)}
+function save(s=null,e={}){let p=settings();localStorage.setItem(KEY,JSON.stringify({fileName:fileSelector.value||p.fileName||"",stationUrl:s?.url||p.stationUrl||"",stationName:s?.name||p.stationName||"",volume:+volumeSlider.value,changeBackground:backgroundEnabled,replaceStationsWithFavorites,dataCounterEnabled,theme:theme.value,customHue:+hue.value,themeIntensity:+intensity.value,buttonBorder:+buttonBorder.value,backgroundImage:p.backgroundImage||"",favorites,favoritesCollapsed,folderFiles:e.folderFiles||p.folderFiles||[]}))}
+function saveContent(n,c){try{localStorage.setItem(PREFIX+n,c)}catch{notify("Не удалось сохранить плейлист")}}
+function content(n){return localStorage.getItem(PREFIX+n)}
+function parse(c){let l=c.replace(/^\uFEFF/,"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean),r=[];for(let i=0;i<l.length;i++)if(l[i].toUpperCase().startsWith("#EXTINF")){let p=l[i].indexOf(","),name=p<0?"Без названия":l[i].slice(p+1).trim(),url="";for(let j=i+1;j<l.length;j++)if(!l[j].startsWith("#")){url=l[j];i=j;break}if(url)r.push({name,url})}return r}
+function allStations(){let out=[],seen=new Set();m3uFiles.forEach(n=>parse(content(n)||"").forEach(s=>{let k=s.name+"\0"+s.url;if(!seen.has(k)){seen.add(k);out.push(s)}}));return out}
+function isFav(s){return favorites.some(x=>x.name===s.name&&x.url===s.url)}
+function toggleFav(s){let i=favorites.findIndex(x=>x.name===s.name&&x.url===s.url);i<0?favorites.push(s):favorites.splice(i,1);save();render()}
+function row(s){let r=document.createElement("div"),b=document.createElement("button"),f=document.createElement("button");r.className="station-row";b.className="station-item"+(playingStation&&s.url===playingStation.url&&s.name===playingStation.name?" playing":"");b.textContent=s.name;b.title=s.name;b.type="button";b.onclick=()=>play(s);f.className="favorite-button";f.textContent=isFav(s)?"★":"☆";f.type="button";f.onclick=e=>{e.stopPropagation();toggleFav(s)};r.append(b,f);return r}
+function renderInto(el,list,empty){el.innerHTML="";if(!list.length)el.innerHTML=`<div style="text-align:center;padding:20px">${empty}</div>`;else list.forEach(s=>el.append(row(s)))}
+function filtered(){let q=search.value.trim().toLocaleLowerCase("ru-RU");if(!q)return replaceStationsWithFavorites&&!favoritesCollapsed?favorites:stations;let w=q.split(/\s+/);return allStations().filter(s=>w.every(x=>(s.name+" "+s.url).toLocaleLowerCase("ru-RU").includes(x)))}
+function render(){let q=search.value.trim();renderInto(favoritesList,favorites,"Избранных станций нет");renderInto(stationList,filtered(),q?"По ключевым словам потоки не найдены":replaceStationsWithFavorites&&!favoritesCollapsed?"Избранных станций нет":"Список станций пуст");favoritesArea.hidden=replaceStationsWithFavorites&&!favoritesCollapsed;favoritesList.hidden=favoritesCollapsed;favoritesToggle.textContent=favoritesCollapsed?"☆":"★";favoritesToggle.classList.toggle("active",!favoritesCollapsed);actions.hidden=replaceStationsWithFavorites;stationList.classList.toggle("favorites-mode",!q&&replaceStationsWithFavorites&&!favoritesCollapsed)}
+function updateMediaSession(){if(!("mediaSession" in navigator)||!playingStation)return;try{navigator.mediaSession.metadata=new MediaMetadata({title:playingStation.name,artist:"Sound Shelter",album:"Radio"});navigator.mediaSession.playbackState=player.paused?"paused":"playing"}catch{}}
+function play(s){playingStation={name:s.name,url:s.url};dataBytes=0;randomButton.textContent=s.name;randomButton.title=s.name;randomButton.classList.add("playing");player.src=s.url;save(s);player.play().then(updateMediaSession).catch(()=>notify("Ошибка воспроизведения"));render()}
+function updateDataCounter(){if(!dataCounterEnabled)return;let entry=performance.getEntriesByName(player.currentSrc||player.src).pop();if(entry?.transferSize)dataBytes=Math.max(dataBytes,entry.transferSize);let estimated=Math.max(dataBytes,(player.currentTime||0)*16000);$("dataCounter").textContent=`Данные: ${(estimated/1048576).toFixed(2)} МБ`}
+function setTheme(){document.documentElement.dataset.theme=theme.value;document.documentElement.style.setProperty("--custom-hue",hue.value);document.documentElement.style.setProperty("--theme-intensity",intensity.value/100);document.documentElement.style.setProperty("--button-border",buttonBorder.value+"px");$("customColorRow").classList.toggle("visible",theme.value==="custom");$("customColorPreview").style.background=`hsl(${hue.value} 90% 55%)`;$("intensityValue").textContent=intensity.value+"%";$("borderValue").textContent=buttonBorder.value+"px";save()}
+function toggle(id,v){$(id).setAttribute("aria-pressed",String(v))}
+function setBackground(value){document.body.style.setProperty("--station-background",value||defaultBackground)}
+function applyBackground(value){if(!value)return;setBackground(`url("${value.replace(/"/g,"%22")}")`);let s=settings();s.backgroundImage=value;localStorage.setItem(KEY,JSON.stringify({...s,changeBackground:true}));backgroundEnabled=true;toggle("backgroundToggle",true);save();notify("Фоновое изображение установлено")}
+function clearBackground(){let s=settings();delete s.backgroundImage;localStorage.setItem(KEY,JSON.stringify({...s,changeBackground:false}));backgroundEnabled=false;toggle("backgroundToggle",false);setBackground(defaultBackground);notify("Ссылка на фон удалена")}
+function selectBackgroundFile(file){if(!file)return;let reader=new FileReader();reader.onload=()=>applyBackground(reader.result);reader.readAsDataURL(file)}
+function exportText(c,n,t){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function exportSettings(){let c=JSON.stringify({type:"radio-page-settings",version:1,settings:settings()},null,2);if(window.showSaveFilePicker)try{let h=await showSaveFilePicker({suggestedName:"radio-settings.json",types:[{description:"JSON",accept:{"application/json":[".json"]}}]});let w=await h.createWritable();await w.write(c);await w.close();notify("Настройки сохранены в выбранную папку");return}catch(e){if(e.name==="AbortError")return}exportText(c,"radio-settings.json","application/json");notify("Файл настроек скачан")}
+function saveFavorites(){let n=prompt("Введите имя нового плейлиста:","Избранное");if(!n?.trim())return;n=n.trim().replace(/[\\/:*?"<>|]/g,"_")+".m3u";saveContent(n,"#EXTM3U\n"+favorites.map(s=>`#EXTINF:-1,${s.name}\n${s.url}`).join("\n"));if(!m3uFiles.includes(n))m3uFiles.push(n);fill(m3uFiles);fileSelector.value=n;notify(`Плейлист «${n}» сохранён`)}
+function saveFound(){let n=prompt("Введите имя нового плейлиста:","Найденные станции");if(!n?.trim())return;n=n.trim().replace(/[\\/:*?"<>|]/g,"_")+".m3u";saveContent(n,"#EXTM3U\n"+filtered().map(s=>`#EXTINF:-1,${s.name}\n${s.url}`).join("\n"));if(!m3uFiles.includes(n))m3uFiles.push(n);fill(m3uFiles);fileSelector.value=n;notify(`Найденные станции сохранены в «${n}»`)}
+function fill(a){fileSelector.innerHTML='<option value="">Выберите список радиостанций</option>';[...new Set(a)].sort().forEach(n=>{let o=document.createElement("option");o.value=n;o.textContent=n;fileSelector.append(o)})}
+function addAll(){let n=0;filtered().forEach(s=>{if(!isFav(s)){favorites.push(s);n++}});save();render();notify(`Добавлено в избранное: ${n}`)}
+function clearAll(){if(!favorites.length)return notify("Избранное уже пусто");if(confirm("Очистить всё избранное?")){favorites=[];save();render();notify("Избранное очищено")}}
+async function load(n){if(!n)return;try{let r=await fetch(encodeURI(n),{cache:"no-store"});if(!r.ok)throw 0;apply(parse(await r.text()),n)}catch{let c=content(n);if(c)apply(parse(c),n);else notify(`Файл «${n}» недоступен`)}}
+function apply(list,n){stations=list;saveContent(n,content(n)||"");if(!m3uFiles.includes(n))m3uFiles.push(n);render();save(null,{folderFiles:m3uFiles});notify(`${n}: найдено станций — ${list.length}`)}
+async function folder(files){let fs=[...files].filter(f=>/\.m3u$/i.test(f.name));if(!fs.length)return notify("В выбранной папке нет M3U-файлов");for(let f of fs)saveContent(f.name,await f.text());m3uFiles=fs.map(f=>f.name);fill(m3uFiles);fileSelector.value=m3uFiles[0];save(null,{folderFiles:m3uFiles});load(fileSelector.value)}
+function restore(){let s=settings();favorites=Array.isArray(s.favorites)?s.favorites:[];favoritesCollapsed=!!s.favoritesCollapsed;replaceStationsWithFavorites=!!s.replaceStationsWithFavorites;backgroundEnabled=!!s.changeBackground;dataCounterEnabled=!!s.dataCounterEnabled;theme.value=s.theme||"dark";hue.value=s.customHue??210;intensity.value=s.themeIntensity??100;buttonBorder.value=s.buttonBorder??2;volumeSlider.value=s.volume??.5;player.volume=+volumeSlider.value;toggle("backgroundToggle",backgroundEnabled);toggle("replaceStationsToggle",replaceStationsWithFavorites);toggle("dataCounterToggle",dataCounterEnabled);$("dataCounter").hidden=!dataCounterEnabled;setTheme();m3uFiles=s.folderFiles||[];fill(m3uFiles);if(s.fileName){fileSelector.value=s.fileName;load(s.fileName)}setBackground(backgroundEnabled&&s.backgroundImage?`url("${s.backgroundImage.replace(/"/g,"%22")}")`:defaultBackground);render()}
+$("settingsButton").onclick=()=>settingsDialog.showModal();$("closeSettingsButton").onclick=()=>settingsDialog.close();
+favoritesToggle.onclick=()=>{favoritesCollapsed=!favoritesCollapsed;save();render()};
+$("addAllButton").onclick=addAll;$("saveAllButton").onclick=saveFavorites;$("clearFavoritesButton").onclick=clearAll;
+$("backgroundSourceButton").onclick=()=>{let m=$("backgroundMenu");m.hidden=!m.hidden};
+$("backgroundUrlButton").onclick=async()=>{try{let u=(await navigator.clipboard.readText()).trim();if(!/^https?:\/\/|^data:image\//i.test(u))throw 0;applyBackground(u)}catch{notify("Не удалось получить корректную ссылку из буфера обмена")}};
+$("clearBackgroundButton").onclick=clearBackground;$("backgroundFileButton").onclick=()=>$("backgroundFileInput").click();
+$("backgroundFileInput").onchange=e=>{selectBackgroundFile(e.target.files[0]);e.target.value="";$("backgroundMenu").hidden=true};
+$("backgroundToggle").onclick=()=>{backgroundEnabled=!backgroundEnabled;toggle("backgroundToggle",backgroundEnabled);if(backgroundEnabled){let s=settings();setBackground(s.backgroundImage?`url("${s.backgroundImage.replace(/"/g,"%22")}")`:defaultBackground)}else setBackground(defaultBackground);save()};
+$("replaceStationsToggle").onclick=()=>{replaceStationsWithFavorites=!replaceStationsWithFavorites;toggle("replaceStationsToggle",replaceStationsWithFavorites);save();render()};
+$("dataCounterToggle").onclick=()=>{dataCounterEnabled=!dataCounterEnabled;toggle("dataCounterToggle",dataCounterEnabled);$("dataCounter").hidden=!dataCounterEnabled;save();updateDataCounter()};
+$("folderButton").onclick=()=>folderInput.click();folderInput.onchange=()=>folder(folderInput.files);
+fileSelector.onchange=()=>load(fileSelector.value);randomButton.onclick=()=>{let x=filtered();if(x.length)play(x[Math.floor(Math.random()*x.length)])};
+$("playBtn").onclick=()=>player.play().then(updateMediaSession);$("pauseBtn").onclick=()=>{player.pause();updateMediaSession()};
+volumeSlider.oninput=()=>{player.volume=+volumeSlider.value;save()};search.oninput=render;$("clearSearch").onclick=()=>{search.value="";render();search.focus()};
+search.onkeydown=e=>{if(e.key==="Escape"){search.value="";render()}};
+$("exportFavoritesButton").onclick=exportSettings;$("exportM3UButton").onclick=()=>{let n=prompt("Введите имя файла избранного:","radio-favorites");if(n?.trim())exportText("#EXTM3U\n"+favorites.map(s=>`#EXTINF:-1,${s.name}\n${s.url}`).join("\n"),n.trim()+".m3u","audio/x-mpegurl")};
+$("importFavoritesButton").onclick=()=>$("favoritesImportInput").click();
+$("favoritesImportInput").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text()),s=x.settings||x;if(Array.isArray(s.favorites))favorites=s.favorites;localStorage.setItem(KEY,JSON.stringify({...settings(),...s,favorites}));restore();notify("Настройки импортированы")}catch{notify("Некорректный файл настроек")}e.target.value=""};
+theme.onchange=setTheme;hue.oninput=setTheme;intensity.oninput=setTheme;buttonBorder.oninput=setTheme;
+player.addEventListener("progress",updateDataCounter);player.addEventListener("timeupdate",updateDataCounter);player.addEventListener("play",updateMediaSession);player.addEventListener("pause",updateMediaSession);
+if("mediaSession" in navigator)[["play",()=>player.play()],["pause",()=>player.pause()],["nexttrack",()=>randomButton.click()],["previoustrack",()=>randomButton.click()],["seekbackward",()=>player.currentTime=Math.max(0,player.currentTime-10)],["seekforward",()=>player.currentTime+=10]].forEach(([a,h])=>{try{navigator.mediaSession.setActionHandler(a,h)}catch{}});
+restore();
+</script>
+</body>
+</html>
